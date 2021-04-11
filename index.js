@@ -26,6 +26,8 @@ app.listen(8080,()=>
   console.log('Server started at port 8080')
 );
 
+var key = ""; //API Key Here
+
 //Bin
 const bin='/bin';
 
@@ -121,3 +123,47 @@ app.get(driver+'/:email/:password',(req,res)=>{
     res.send(out);
   })
 })
+
+//Route Optimization
+app.get('/route/:latitude/:longitude',(req,res)=>{
+  con.query('SELECT latitude, longitude from Bin where level = 1',(err,rows,fields)=>{
+    if(err) throw err;
+    getCoordinates([req.params.latitude], [req.params.longitude], rows).then(
+      function(result){
+    	var coordinates = JSON.stringify(result);
+    	res.send(coordinates);
+      }
+    )
+  })
+})
+
+async function getCoordinates(originLat, originLong, dustbins){
+  let apiUrl = 'https://api.tomtom.com/routing/1/calculateRoute/'+ originLat +',' + originLong + ':';
+  for (let val of dustbins){
+    apiUrl+= val['latitude'] + ',' + val['longitude'] + ":" ;
+  }
+  apiUrl+= originLat +',' + originLong +'/json?key='+key+'&computeBestOrder=true';
+  var distance = 0;
+  let route = await fetch(apiUrl)
+  .then(resp => resp.json())
+  .then(resp => {
+    try {
+      let coordinates = resp["routes"][0]["legs"][0]["points"];
+      distance = resp['routes'][0]['summary']['lengthInMeters'];
+      let coord = [];
+      for (let val of coordinates){
+        coord.push({
+          latitude: val["latitude"],
+          longitude: val["longitude"],
+        });
+      }
+      return coord;
+    } catch (error) {
+      return [];
+    }
+  });
+  return {
+    "distance" : distance/1000,
+    "coordinates" : route
+  };
+}
