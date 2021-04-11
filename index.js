@@ -25,3 +25,32 @@ con.connect(function(err) {
 app.listen(8080,()=>
   console.log('Server started at port 8080')
 );
+
+//Bin
+const bin='/bin';
+
+//CREATE
+app.post(bin,(req,res)=>{
+  let specs=req.body;
+  con.query("INSERT INTO Bin SET ?",specs,(err,rows,fields)=>{
+  if(err) throw err;
+  res.send(JSON.stringify(rows["insertId"]))
+  })
+})
+
+//READ
+app.get(bin,(req,res)=>{
+  con.query('SELECT * from Bin',(err,rows,fields)=>{
+    if(err) throw err;
+    res.json(rows);
+  })
+})
+
+//Update
+app.put(bin+'/:Bin_ID',(req,res)=>{
+  let task=req.body;
+  con.query('UPDATE Bin SET `level`=? where `Bin_Id`=?',[task.filled,req.params.Bin_Id],(err,rows,fields)=>{
+  if(err) throw err;
+  res.send('Updated Successfully')
+  })
+})
